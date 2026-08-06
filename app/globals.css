@@ -9,3 +9,14 @@
 .legal-updated{color:#666!important;font-size:12px!important}
 .legal-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:40px;padding-top:22px;border-top:1px solid #2b2b2b}
 .legal-links a{text-decoration:none;border:1px solid #41302f;border-radius:8px;padding:10px 13px;background:#130e0e}
+/* Connexion TikTok */
+.tiktok-connect-card{text-align:center;padding:35px 20px}
+.tiktok-connect-card h2{font-size:28px;margin:0 0 12px}
+.tiktok-connect-card p{color:#999;line-height:1.6}
+.tiktok-auth-button{display:inline-flex;text-decoration:none;margin-top:15px}
+.tiktok-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+.tiktok-actions a{display:inline-flex;text-decoration:none}
+.tiktok-secondary{padding:12px 16px;border:1px solid #333;border-radius:7px;color:#aaa}
+.tiktok-success{color:#45ce7d!important;font-weight:700}
+.tiktok-demo-help{margin-top:14px}
+.tiktok-demo-help li{color:#aaa;line-height:1.8}
