@@ -45,6 +45,10 @@ async function requestTikTok(url, token, options = {}) {
   });
 }
 
+function tiktokRequestFailed(response, payload) {
+  return !response.ok || (payload?.error?.code && payload.error.code !== "ok");
+}
+
 async function loadData(token) {
   const userUrl = new URL("https://open.tiktokapis.com/v2/user/info/");
   userUrl.searchParams.set("fields", USER_FIELDS);
@@ -63,12 +67,18 @@ async function loadData(token) {
   const userPayload = await userResponse.json();
   const videosPayload = await videosResponse.json();
 
-  if (!userResponse.ok || userPayload.error?.code) {
-    throw new Error(userPayload.error?.message || "Profil TikTok indisponible.");
+  if (tiktokRequestFailed(userResponse, userPayload)) {
+    throw new Error(
+      userPayload?.error?.message ||
+      `Profil TikTok indisponible (${userPayload?.error?.code || userResponse.status}).`
+    );
   }
 
-  if (!videosResponse.ok || videosPayload.error?.code) {
-    throw new Error(videosPayload.error?.message || "Vidéos TikTok indisponibles.");
+  if (tiktokRequestFailed(videosResponse, videosPayload)) {
+    throw new Error(
+      videosPayload?.error?.message ||
+      `Vidéos TikTok indisponibles (${videosPayload?.error?.code || videosResponse.status}).`
+    );
   }
 
   return {
@@ -120,6 +130,7 @@ export async function GET(request) {
     }
 
     const data = await loadData(accessToken);
+
     const response = NextResponse.json({
       status: "connected",
       user: data.user,
@@ -139,6 +150,7 @@ export async function GET(request) {
       },
       { status: 401 }
     );
+
     clearTokenCookies(response);
     return response;
   }
