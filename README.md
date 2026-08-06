@@ -1,39 +1,39 @@
-# Dossier Noir Stats V2
+# Dossier Noir Stats V3
 
-Dashboard public prêt pour Vercel.
-
-## Ce qui fonctionne immédiatement
-- Site public responsive
-- Design Dossier Noir
-- Page d'administration pour saisir TikTok et Instagram manuellement
-- Stockage manuel dans le navigateur
-- Synchronisation automatique YouTube dès que les variables Vercel sont configurées
-- Actualisation YouTube toutes les 5 minutes
-
-## Déploiement Vercel
-1. Crée un dépôt GitHub vide nommé `dossiernoir-stats`.
-2. Décompresse ce dossier et envoie tous les fichiers dans le dépôt.
-3. Sur Vercel : Add New > Project > Import Git Repository.
-4. Choisis le dépôt `dossiernoir-stats`.
-5. Clique Deploy. Next.js est détecté automatiquement.
-6. Dans Project Settings > Environment Variables, ajoute :
-   - YOUTUBE_API_KEY
-   - YOUTUBE_CHANNEL_ID
-7. Redéploie.
-
-## Activer YouTube automatiquement
-1. Ouvre Google Cloud Console.
-2. Crée un projet.
-3. Active “YouTube Data API v3”.
-4. Crée une API key.
-5. Copie l’identifiant de ta chaîne YouTube.
-6. Ajoute les deux valeurs dans Vercel.
-
-## Instagram et TikTok
-Le tableau est préparé pour eux, mais leur connexion automatique exige :
-- une application Meta et les permissions Instagram Insights ;
-- une application TikTok développeur et les autorisations accordées/validées.
-En attendant, la page `/admin` permet de saisir leurs statistiques.
+## Inclus
+- Graphiques animés Recharts
+- Miniatures YouTube automatiques
+- Analyse IA avec repli local si aucune clé OpenAI
+- Score de viralité heuristique
+- Calcul descriptif de la meilleure heure de publication
+- Calendrier
+- Estimation de revenus configurable
+- Classement des hooks
+- Alertes internes
+- Cron Vercel horaire
+- Schéma Supabase
+- Saisie manuelle TikTok/Instagram en attendant l'approbation de leurs API
 
 ## Important
-La page `/admin` de cette version utilise le stockage local du navigateur. Pour une véritable administration privée partagée entre appareils, ajoute ensuite une base de données (Vercel Postgres/Supabase) et une authentification.
+Certaines fonctions sont prêtes techniquement mais exigent des autorisations externes :
+- Instagram : application Meta + permissions Insights
+- TikTok : application développeur + Display API/Login Kit
+- Notifications externes : canal email, Discord ou Telegram à choisir
+- Données privées YouTube (rétention exacte, abonnés gagnés par vidéo) : OAuth YouTube Analytics, pas seulement une clé publique
+
+## Mise à jour depuis la V2
+Remplace le contenu du dépôt GitHub par celui de ce ZIP, commit sur `main`, puis Vercel redéploiera automatiquement.
+
+## Variables minimales
+- YOUTUBE_API_KEY
+- YOUTUBE_CHANNEL_ID
+
+## Variables recommandées
+- OPENAI_API_KEY
+- OPENAI_MODEL
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- CRON_SECRET
+
+Consulte `INSTALLATION-V3.txt` et `supabase/schema.sql`.

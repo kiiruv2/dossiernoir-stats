@@ -1,141 +1,227 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
+import {
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis
+} from "recharts";
+import { demoTrend, demoVideos } from "../lib/demo";
+import { bestPublishingHour, engagementRate, extractHook, revenueEstimate, viralScore } from "../lib/analytics";
 
-const fmt = (n) => new Intl.NumberFormat('fr-FR', { notation: n > 999999 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(Number(n || 0));
-const pct = (a,b) => b ? ((a/b)*100).toFixed(1) : '0.0';
+const fmt = n => new Intl.NumberFormat("fr-FR", {notation:Number(n)>999999?"compact":"standard", maximumFractionDigits:1}).format(Number(n||0));
+const euro = n => new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR"}).format(Number(n||0));
 
-function PlatformBadge({name}) {
-  const key = name.toLowerCase().replaceAll(' ','-');
-  return <span className={`platform ${key}`}>{name}</span>;
+function Badge({children, tone=""}) { return <span className={`badge ${tone}`}>{children}</span>; }
+function Kpi({label,value,detail,accent=""}) {
+  return <article className={`kpi ${accent}`}><p>{label}</p><strong>{value}</strong><small>{detail}</small></article>;
 }
-
-function Metric({label, value, detail, red=false}) {
-  return <article className={`metric ${red ? 'metric-red' : ''}`}>
-    <p>{label}</p><strong>{value}</strong><small>{detail}</small>
-  </article>;
+function Score({value}) {
+  return <div className="score-ring" style={{"--score":`${value*3.6}deg`}}><span>{value}</span><small>/100</small></div>;
 }
-
-function Bar({label, value, max}) {
-  return <div className="bar-row">
-    <div className="bar-label">{label}</div>
-    <div className="bar-track"><div className="bar-fill" style={{width:`${max ? Math.max(3, value/max*100) : 3}%`}} /></div>
-    <div className="bar-number">{fmt(value)}</div>
-  </div>
+function Platform({name}) {
+  const tone = name.includes("YouTube")?"yt":name.includes("TikTok")?"tt":"ig";
+  return <Badge tone={tone}>{name}</Badge>;
 }
 
 export default function Home() {
-  const [youtube, setYoutube] = useState({status:'loading', channel:null, videos:[], message:''});
-  const [manual, setManual] = useState([]);
-  const [tab, setTab] = useState('overview');
+  const [youtube,setYoutube] = useState({status:"loading",videos:[],message:""});
+  const [manual,setManual] = useState([]);
+  const [analysis,setAnalysis] = useState("");
+  const [analyzing,setAnalyzing] = useState(false);
+  const [demoMode,setDemoMode] = useState(true);
+  const [view,setView] = useState("dashboard");
 
-  useEffect(() => {
-    fetch('/api/youtube')
-      .then(r => r.json())
-      .then(d => setYoutube(d))
-      .catch(() => setYoutube({status:'error', channel:null, videos:[], message:"Connexion YouTube indisponible"}));
-    try { setManual(JSON.parse(localStorage.getItem('dn-manual-v2') || '[]')); } catch {}
-  }, []);
+  useEffect(()=>{
+    fetch("/api/youtube").then(r=>r.json()).then(setYoutube).catch(()=>setYoutube({status:"error",videos:[],message:"Erreur YouTube"}));
+    try { setManual(JSON.parse(localStorage.getItem("dn-manual-v3")||"[]")); } catch {}
+  },[]);
 
-  const all = useMemo(() => {
-    const yt = (youtube.videos || []).map(v => ({
-      id:v.id, dossier:v.dossier || '—', title:v.title, platform:'YouTube Shorts',
-      views:+v.views, likes:+v.likes, comments:+v.comments, shares:0, date:v.publishedAt,
-      thumbnail:v.thumbnail
-    }));
-    return [...yt, ...manual];
-  }, [youtube, manual]);
+  const liveVideos = useMemo(()=>[...(youtube.videos||[]),...manual],[youtube,manual]);
+  const videos = demoMode && !liveVideos.length ? demoVideos : liveVideos;
+  const baseline = useMemo(()=>{
+    const views = videos.map(v=>Number(v.views||0)).sort((a,b)=>a-b);
+    return {viewsMedian:views.length?views[Math.floor(views.length/2)]:1};
+  },[videos]);
 
-  const totals = useMemo(() => all.reduce((a,x) => ({
-    views:a.views+x.views, likes:a.likes+x.likes, comments:a.comments+x.comments,
-    shares:a.shares+(x.shares||0)
-  }), {views:0,likes:0,comments:0,shares:0}), [all]);
+  const enriched = useMemo(()=>videos.map(v=>({
+    ...v,
+    hook:v.hook||extractHook(v.title),
+    score:viralScore(v,baseline),
+    revenue:revenueEstimate(v),
+    er:engagementRate(v)
+  })),[videos,baseline]);
 
-  const grouped = useMemo(() => {
-    const out = {'TikTok':0,'YouTube Shorts':0,'Instagram Reels':0};
-    all.forEach(x => out[x.platform] = (out[x.platform]||0)+x.views);
-    return out;
-  }, [all]);
+  const totals = useMemo(()=>enriched.reduce((a,v)=>({
+    views:a.views+Number(v.views||0), likes:a.likes+Number(v.likes||0),
+    comments:a.comments+Number(v.comments||0), shares:a.shares+Number(v.shares||0),
+    followers:a.followers+Number(v.followers||0), revenue:a.revenue+Number(v.revenue||0)
+  }),{views:0,likes:0,comments:0,shares:0,followers:0,revenue:0}),[enriched]);
 
-  const best = [...all].sort((a,b)=>b.views-a.views)[0];
-  const maxPlatform = Math.max(...Object.values(grouped),1);
+  const best = [...enriched].sort((a,b)=>b.score-a.score)[0];
+  const bestHour = bestPublishingHour(enriched);
+  const hookRanking = [...enriched].sort((a,b)=>b.score-a.score);
+  const platformData = ["TikTok","YouTube Shorts","Instagram Reels"].map(platform=>({
+    platform,
+    views:enriched.filter(v=>v.platform===platform).reduce((s,v)=>s+Number(v.views||0),0)
+  }));
+  const trend = demoMode && !liveVideos.length ? demoTrend : enriched.map((v,i)=>({label:`Vidéo ${i+1}`,views:Number(v.views||0)}));
+  const calendar = [...enriched].sort((a,b)=>new Date(a.publishedAt||a.date)-new Date(b.publishedAt||b.date));
 
-  return <div className="site-shell">
-    <div className="noise" />
-    <header className="header">
-      <a className="logo" href="/">
-        <span className="logo-folder">DN</span>
-        <span><b>DOSSIER</b> <em>NOIR</em><small>STATISTIQUES PUBLIQUES</small></span>
-      </a>
+  async function runAnalysis(){
+    setAnalyzing(true);
+    const r = await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({videos:enriched})});
+    const d = await r.json();
+    setAnalysis(d.analysis||"Analyse indisponible.");
+    setAnalyzing(false);
+  }
+
+  return <div className="app-shell">
+    <aside className="sidebar">
+      <a className="brand" href="/"><span>DN</span><div><b>DOSSIER <em>NOIR</em></b><small>CONTROL CENTER V3</small></div></a>
       <nav>
-        <button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Vue d’ensemble</button>
-        <button className={tab==='videos'?'active':''} onClick={()=>setTab('videos')}>Dossiers</button>
-        <a href="/admin">Administration</a>
+        {[
+          ["dashboard","Vue d'ensemble","◫"],["videos","Vidéos","▶"],["ai","Analyse IA","✦"],
+          ["calendar","Calendrier","▦"],["hooks","Hooks","⌁"],["alerts","Alertes","!"]
+        ].map(([id,label,icon])=><button key={id} className={view===id?"active":""} onClick={()=>setView(id)}><span>{icon}</span>{label}</button>)}
       </nav>
-    </header>
+      <div className="sidebar-bottom">
+        <label className="demo-switch"><input type="checkbox" checked={demoMode} onChange={e=>setDemoMode(e.target.checked)}/><span></span>Mode démo</label>
+        <a href="/admin">Administration</a>
+      </div>
+    </aside>
 
-    <main>
-      <section className="hero">
-        <div>
-          <p className="kicker">CENTRE D’ANALYSE · DOSSIER NOIR</p>
-          <h1>Les chiffres derrière<br/><span>chaque enquête.</span></h1>
-          <p className="hero-copy">Performances publiques de Dossier Noir sur YouTube Shorts, TikTok et Instagram Reels.</p>
+    <main className="content">
+      <header className="topbar">
+        <div><p className="eyebrow">DOSSIER NOIR · ANALYTICS</p><h1>{{
+          dashboard:"Vue d'ensemble",videos:"Performances vidéo",ai:"Analyse IA",
+          calendar:"Calendrier",hooks:"Classement des hooks",alerts:"Centre d'alertes"
+        }[view]}</h1></div>
+        <div className="top-actions">
+          <Badge tone={youtube.status==="ok"?"success":"warn"}>{youtube.status==="ok"?"YouTube connecté":"YouTube en attente"}</Badge>
+          <span className="live"><i></i> Synchronisation horaire</span>
         </div>
-        <div className="hero-seal">
-          <span>RAPPORT</span><b>LIVE</b><small>MIS À JOUR AUTOMATIQUEMENT</small>
-        </div>
-      </section>
+      </header>
 
-      {tab === 'overview' && <>
-        <section className="metrics">
-          <Metric label="Vues cumulées" value={fmt(totals.views)} detail={`${all.length} entrées analysées`} />
-          <Metric label="Interactions" value={fmt(totals.likes+totals.comments+totals.shares)} detail={`${pct(totals.likes+totals.comments+totals.shares, totals.views)} % des vues`} />
-          <Metric label="Commentaires" value={fmt(totals.comments)} detail="Toutes plateformes" />
-          <Metric red label="Dossier le plus vu" value={best ? `N°${best.dossier}` : '—'} detail={best ? `${fmt(best.views)} vues · ${best.platform}` : 'En attente de données'} />
+      {view==="dashboard" && <>
+        <section className="kpis">
+          <Kpi label="Vues cumulées" value={fmt(totals.views)} detail={`${enriched.length} entrées analysées`} />
+          <Kpi label="Interactions" value={fmt(totals.likes+totals.comments+totals.shares)} detail={`${totals.views?((totals.likes+totals.comments+totals.shares)/totals.views*100).toFixed(1):0}% des vues`} />
+          <Kpi label="Abonnés gagnés" value={`+${fmt(totals.followers)}`} detail="Toutes plateformes" />
+          <Kpi label="Revenus estimés" value={euro(totals.revenue)} detail="Estimation, pas un revenu réel" accent="red" />
         </section>
 
-        <section className="dashboard-grid">
-          <article className="panel performance">
-            <div className="panel-title"><div><p>RÉPARTITION</p><h2>Vues par plateforme</h2></div><span className="live-dot">LIVE</span></div>
-            <div className="bars">
-              {Object.entries(grouped).map(([k,v]) => <Bar key={k} label={k} value={v} max={maxPlatform}/>)}
+        <section className="grid-main">
+          <article className="panel chart-panel">
+            <div className="panel-head"><div><p>ÉVOLUTION</p><h2>Vues dans le temps</h2></div><Badge tone="success">LIVE</Badge></div>
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trend}>
+                  <defs><linearGradient id="redFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e53935" stopOpacity=".45"/><stop offset="100%" stopColor="#e53935" stopOpacity="0"/></linearGradient></defs>
+                  <CartesianGrid stroke="#272727" vertical={false}/>
+                  <XAxis dataKey="label" stroke="#777" tickLine={false} axisLine={false}/>
+                  <YAxis stroke="#777" tickLine={false} axisLine={false} width={42}/>
+                  <Tooltip contentStyle={{background:"#111",border:"1px solid #333",borderRadius:8}}/>
+                  <Area type="monotone" dataKey="views" stroke="#e53935" fill="url(#redFill)" strokeWidth={3} isAnimationActive/>
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </article>
 
-          <article className="panel connection">
-            <div className="panel-title"><div><p>CONNEXIONS</p><h2>État des sources</h2></div></div>
-            <div className="connection-row"><PlatformBadge name="YouTube Shorts"/><span className={youtube.status==='ok'?'ok':'pending'}>{youtube.status==='ok'?'Connecté':'À configurer'}</span></div>
-            <div className="connection-row"><PlatformBadge name="TikTok"/><span className="pending">Validation API requise</span></div>
-            <div className="connection-row"><PlatformBadge name="Instagram Reels"/><span className="pending">Connexion Meta requise</span></div>
-            {youtube.message && <p className="api-note">{youtube.message}</p>}
+          <article className="panel best-card">
+            <div className="panel-head"><div><p>PERFORMANCE</p><h2>Score de viralité</h2></div></div>
+            {best ? <>
+              <Score value={best.score}/>
+              <h3>Dossier N°{best.dossier}</h3>
+              <p>{best.title}</p>
+              <div className="mini-stats"><span>{fmt(best.views)} vues</span><span>{best.er.toFixed(1)}% engagement</span></div>
+            </>:<div className="empty">Aucune donnée</div>}
           </article>
         </section>
 
-        <section className="panel latest">
-          <div className="panel-title"><div><p>ARCHIVES RÉCENTES</p><h2>Derniers dossiers publiés</h2></div><button onClick={()=>setTab('videos')}>Tout afficher →</button></div>
-          <div className="video-grid">
-            {all.slice(0,6).map((v,i)=><article className="video-card" key={`${v.platform}-${v.id || i}`}>
-              <div className="thumb" style={v.thumbnail ? {backgroundImage:`url(${v.thumbnail})`} : {}}>
-                {!v.thumbnail && <span>📁</span>}<b>DOSSIER N°{v.dossier}</b>
-              </div>
-              <div className="card-body">
-                <PlatformBadge name={v.platform}/>
-                <h3>{v.title}</h3>
-                <div className="card-stats"><span>{fmt(v.views)} vues</span><span>{fmt(v.likes)} j’aime</span></div>
-              </div>
-            </article>)}
-            {!all.length && <div className="empty"><span>📁</span><h3>Aucune statistique pour le moment</h3><p>La première synchronisation apparaîtra ici.</p></div>}
+        <section className="grid-secondary">
+          <article className="panel">
+            <div className="panel-head"><div><p>PLATEFORMES</p><h2>Répartition des vues</h2></div></div>
+            <div className="chart-box small">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={platformData} layout="vertical">
+                  <CartesianGrid stroke="#272727" horizontal={false}/>
+                  <XAxis type="number" hide/>
+                  <YAxis dataKey="platform" type="category" width={115} stroke="#aaa" axisLine={false} tickLine={false}/>
+                  <Tooltip contentStyle={{background:"#111",border:"1px solid #333"}}/>
+                  <Bar dataKey="views" fill="#e53935" radius={[0,6,6,0]} isAnimationActive/>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </article>
+
+          <article className="panel insight-card">
+            <div className="panel-head"><div><p>OPTIMISATION</p><h2>Meilleure heure</h2></div></div>
+            <strong>{bestHour ? `${String(bestHour.hour).padStart(2,"0")}h00` : "—"}</strong>
+            <p>{bestHour ? `${fmt(bestHour.avgViews)} vues moyennes sur ${bestHour.count} publication(s).` : "Publie plusieurs vidéos pour calculer cette donnée."}</p>
+            <small>Corrélation descriptive uniquement.</small>
+          </article>
+
+          <article className="panel alert-card">
+            <div className="panel-head"><div><p>ALERTE</p><h2>Vidéo en accélération</h2></div></div>
+            {best && best.score>=70 ? <><Badge tone="danger">POTENTIEL VIRAL</Badge><h3>{best.title}</h3><p>Son score dépasse le seuil configuré de 70/100.</p></> : <div className="empty compact">Aucune alerte active</div>}
+          </article>
+        </section>
+
+        <section className="panel ranking">
+          <div className="panel-head"><div><p>CLASSEMENT</p><h2>Meilleures vidéos</h2></div><button onClick={()=>setView("videos")}>Voir tout →</button></div>
+          <div className="rank-list">
+            {hookRanking.slice(0,5).map((v,i)=><div className="rank-row" key={`${v.platform}-${v.id}`}>
+              <b>#{i+1}</b><div className="fake-thumb">{v.thumbnail?<img src={v.thumbnail} alt=""/>:<span>DN</span>}</div>
+              <div className="rank-title"><strong>Dossier {v.dossier} · {v.title}</strong><Platform name={v.platform}/></div>
+              <span>{fmt(v.views)} vues</span><Score value={v.score}/>
+            </div>)}
           </div>
         </section>
       </>}
 
-      {tab === 'videos' && <section className="panel archive">
-        <div className="panel-title"><div><p>BASE DE DONNÉES</p><h2>Tous les dossiers</h2></div></div>
-        <div className="table-wrap"><table><thead><tr><th>Dossier</th><th>Plateforme</th><th>Vues</th><th>J’aime</th><th>Commentaires</th><th>Date</th></tr></thead>
-        <tbody>{all.map((v,i)=><tr key={i}><td><b>N°{v.dossier}</b><span>{v.title}</span></td><td><PlatformBadge name={v.platform}/></td><td>{fmt(v.views)}</td><td>{fmt(v.likes)}</td><td>{fmt(v.comments)}</td><td>{v.date ? new Date(v.date).toLocaleDateString('fr-FR') : '—'}</td></tr>)}</tbody></table></div>
+      {view==="videos" && <section className="panel">
+        <div className="panel-head"><div><p>CATALOGUE</p><h2>Toutes les performances</h2></div></div>
+        <div className="table-wrap"><table><thead><tr><th>Dossier</th><th>Plateforme</th><th>Vues</th><th>Engagement</th><th>Rétention</th><th>Viralité</th><th>Revenu estimé</th></tr></thead>
+        <tbody>{enriched.map(v=><tr key={`${v.platform}-${v.id}`}><td><b>N°{v.dossier}</b><span>{v.title}</span></td><td><Platform name={v.platform}/></td><td>{fmt(v.views)}</td><td>{v.er.toFixed(1)}%</td><td>{v.retention||0}%</td><td><strong className={v.score>=70?"hot":""}>{v.score}/100</strong></td><td>{euro(v.revenue)}</td></tr>)}</tbody></table></div>
       </section>}
-    </main>
 
-    <footer><span>DOSSIER NOIR © 2026</span><span>Les données publiques peuvent différer légèrement des plateformes.</span></footer>
+      {view==="ai" && <section className="ai-layout">
+        <article className="panel ai-panel">
+          <div className="panel-head"><div><p>ASSISTANT STRATÉGIQUE</p><h2>Analyse de la chaîne</h2></div><Badge tone={process.env.NEXT_PUBLIC_OPENAI_ENABLED?"success":"warn"}>IA / LOCAL</Badge></div>
+          <button className="primary" onClick={runAnalysis} disabled={analyzing}>{analyzing?"Analyse en cours...":"Analyser mes performances"}</button>
+          <div className="analysis-output">{analysis || "Lance l'analyse pour obtenir un diagnostic basé sur les statistiques disponibles."}</div>
+        </article>
+        <article className="panel checklist">
+          <div className="panel-head"><div><p>MÉTHODE</p><h2>Ce que l'analyse vérifie</h2></div></div>
+          <ul><li>Hook et potentiel d'arrêt du scroll</li><li>Rétention et taux de complétion</li><li>Engagement par plateforme</li><li>Heure et fréquence de publication</li><li>Limites statistiques et tests à réaliser</li></ul>
+        </article>
+      </section>}
+
+      {view==="calendar" && <section className="panel calendar-panel">
+        <div className="panel-head"><div><p>PLANIFICATION</p><h2>Calendrier des publications</h2></div><a href="/calendar">Ouvrir la vue complète →</a></div>
+        <div className="calendar-grid">{calendar.map(v=><article key={`${v.platform}-${v.id}`}><time>{new Date(v.publishedAt||v.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"})}</time><strong>Dossier {v.dossier}</strong><span>{new Date(v.publishedAt||v.date).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span><Platform name={v.platform}/></article>)}</div>
+      </section>}
+
+      {view==="hooks" && <section className="panel">
+        <div className="panel-head"><div><p>COPYWRITING</p><h2>Classement des meilleurs hooks</h2></div></div>
+        <div className="hook-list">{hookRanking.map((v,i)=><article key={`${v.platform}-${v.id}`}><b>#{i+1}</b><div><h3>“{v.hook}”</h3><p>{v.platform} · {fmt(v.views)} vues · {v.er.toFixed(1)}% engagement</p></div><Score value={v.score}/></article>)}</div>
+      </section>}
+
+      {view==="alerts" && <section className="alerts-grid">
+        <article className="panel">
+          <div className="panel-head"><div><p>NOTIFICATIONS</p><h2>Règles actives</h2></div></div>
+          <div className="rule"><span>Score de viralité ≥ 70</span><Badge tone="success">ACTIF</Badge></div>
+          <div className="rule"><span>Vues × 2 en moins de 3 h</span><Badge tone="success">ACTIF</Badge></div>
+          <div className="rule"><span>Commentaires anormalement élevés</span><Badge tone="success">ACTIF</Badge></div>
+          <p className="muted">Les notifications externes exigent un canal configuré. Cette V3 prépare les alertes dans la base ; email/Discord/Telegram pourront être ajoutés ensuite.</p>
+        </article>
+        <article className="panel">
+          <div className="panel-head"><div><p>DERNIÈRE DÉTECTION</p><h2>Centre d'alertes</h2></div></div>
+          {best&&best.score>=70?<div className="big-alert"><span>🔥</span><h3>Dossier {best.dossier} accélère</h3><p>Score actuel : {best.score}/100</p></div>:<div className="empty">Aucune alerte active</div>}
+        </article>
+      </section>}
+
+      {youtube.message && !demoMode && <div className="system-message">{youtube.message}</div>}
+    </main>
   </div>
 }
