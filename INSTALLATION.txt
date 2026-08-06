@@ -1,0 +1,47 @@
+INSTALLATION PROPRE DE LA V3
+
+IMPORTANT : ne téléverse pas le ZIP lui-même dans GitHub.
+
+À la racine de la branche main, tu dois voir :
+- app
+- lib
+- supabase
+- .env.example
+- .gitignore
+- INSTALLATION.txt
+- README.md
+- next.config.mjs
+- package.json
+- vercel.json
+
+Dans app, tu dois voir :
+- api
+- admin
+- globals.css
+- layout.js
+- page.js
+
+MÉTHODE GITHUB WEB
+1. Sur la branche main, supprime le fichier `dossiernoir-stats-v2-vercel.zip`.
+2. Supprime les anciens fichiers qui ne sont plus dans la V3.
+3. Clique Add file > Upload files.
+4. Glisse tout le CONTENU du dossier V3 décompressé.
+5. Commit directement sur main.
+6. Dans Vercel, attends Production > Ready.
+7. Recharge https://dossiernoir-stats.vercel.app avec Ctrl+F5.
+
+VARIABLES À CONSERVER
+YOUTUBE_API_KEY
+YOUTUBE_CHANNEL_ID
+
+VARIABLE À AJOUTER
+CRON_SECRET = une longue suite aléatoire
+
+OPTIONNEL
+OPENAI_API_KEY
+OPENAI_MODEL = gpt-5.4-mini
+
+TEST
+- Le menu latéral doit afficher six rubriques.
+- Le mode démo affiche immédiatement des graphiques.
+- /admin permet d'ajouter TikTok et Instagram manuellement.

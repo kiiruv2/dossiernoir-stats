@@ -25,3 +25,5 @@ Cette version contient bien tous les fichiers nécessaires à la racine du proje
 5. Vercel déploiera automatiquement.
 
 Voir `INSTALLATION.txt`.
+
+Déploiement V3 final
