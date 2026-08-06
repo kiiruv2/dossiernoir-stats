@@ -1,6 +1,6 @@
 {
   "name": "dossiernoir-stats",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,12 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "16.2.12",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "react-is": "19.2.7",
-    "recharts": "3.10.1",
-    "@supabase/ssr": "0.7.0",
-    "@supabase/supabase-js": "2.57.4"
+    "next": "^16.3.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   }
 }

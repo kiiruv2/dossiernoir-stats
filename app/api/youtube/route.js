@@ -7,7 +7,12 @@ export async function GET() {
   const channelId = process.env.YOUTUBE_CHANNEL_ID;
 
   if (!key || !channelId) {
-    return NextResponse.json({ status:"setup", videos:[], channel:null, message:"YouTube n'est pas encore configuré." });
+    return NextResponse.json({
+      status: "setup",
+      channel: null,
+      videos: [],
+      message: "Ajoute YOUTUBE_API_KEY et YOUTUBE_CHANNEL_ID dans Vercel."
+    });
   }
 
   try {
@@ -16,84 +21,110 @@ export async function GET() {
     channelUrl.searchParams.set("id", channelId);
     channelUrl.searchParams.set("key", key);
 
-    const channelRes = await fetch(channelUrl, { next:{revalidate:300} });
-    const channelData = await channelRes.json();
-    if (!channelRes.ok || !channelData.items?.length) {
-      throw new Error(channelData.error?.message || "Chaîne YouTube introuvable.");
+    const channelResponse = await fetch(channelUrl, { next: { revalidate: 300 } });
+    const channelPayload = await channelResponse.json();
+
+    if (!channelResponse.ok || !channelPayload.items?.length) {
+      throw new Error(channelPayload.error?.message || "Chaîne YouTube introuvable.");
     }
 
-    const channel = channelData.items[0];
-    const uploads = channel.contentDetails?.relatedPlaylists?.uploads;
-    if (!uploads) {
+    const channel = channelPayload.items[0];
+    const uploadsPlaylist = channel.contentDetails?.relatedPlaylists?.uploads;
+
+    if (!uploadsPlaylist) {
       return NextResponse.json({
-        status:"ok",
-        channel:{title:channel.snippet.title, ...channel.statistics},
-        videos:[],
-        message:"La playlist d'uploads n'est pas encore disponible. Publie une première vidéo puis recharge."
+        status: "ok",
+        channel: { title: channel.snippet.title, ...channel.statistics },
+        videos: [],
+        message: "La playlist d'uploads n'est pas encore disponible."
       });
     }
 
     const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
     playlistUrl.searchParams.set("part", "snippet,contentDetails");
-    playlistUrl.searchParams.set("playlistId", uploads);
+    playlistUrl.searchParams.set("playlistId", uploadsPlaylist);
     playlistUrl.searchParams.set("maxResults", "50");
     playlistUrl.searchParams.set("key", key);
 
-    const playlistRes = await fetch(playlistUrl, { next:{revalidate:300} });
-    const playlistData = await playlistRes.json();
+    const playlistResponse = await fetch(playlistUrl, { next: { revalidate: 300 } });
+    const playlistPayload = await playlistResponse.json();
 
-    if (!playlistRes.ok) {
-      const reason = playlistData.error?.errors?.[0]?.reason;
+    if (!playlistResponse.ok) {
+      const reason = playlistPayload.error?.errors?.[0]?.reason;
       if (reason === "playlistNotFound") {
         return NextResponse.json({
-          status:"ok",
-          channel:{title:channel.snippet.title, ...channel.statistics},
-          videos:[],
-          message:"Playlist YouTube vide ou pas encore initialisée. Réessaie après la première publication."
+          status: "ok",
+          channel: { title: channel.snippet.title, ...channel.statistics },
+          videos: [],
+          message: "La chaîne n'a pas encore de playlist publique active. Réessaie après la première publication."
         });
       }
-      throw new Error(playlistData.error?.message || "Playlist YouTube indisponible.");
+      throw new Error(playlistPayload.error?.message || "Playlist YouTube indisponible.");
     }
 
-    const ids = (playlistData.items || []).map(x => x.contentDetails.videoId);
+    const ids = (playlistPayload.items || []).map((item) => item.contentDetails.videoId);
+
     if (!ids.length) {
-      return NextResponse.json({status:"ok",channel:{title:channel.snippet.title,...channel.statistics},videos:[],message:"Aucune vidéo publique pour le moment."});
+      return NextResponse.json({
+        status: "ok",
+        channel: { title: channel.snippet.title, ...channel.statistics },
+        videos: [],
+        message: "Aucune vidéo publique pour le moment."
+      });
     }
 
     const videosUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
-    videosUrl.searchParams.set("part", "snippet,statistics,contentDetails");
+    videosUrl.searchParams.set("part", "snippet,statistics");
     videosUrl.searchParams.set("id", ids.join(","));
     videosUrl.searchParams.set("key", key);
-    const videosRes = await fetch(videosUrl, { next:{revalidate:300} });
-    const videosData = await videosRes.json();
-    if (!videosRes.ok) throw new Error(videosData.error?.message || "Statistiques YouTube indisponibles.");
 
-    const videos = videosData.items.map((v,index) => {
-      const match = v.snippet.title.match(/(?:dossier\s*(?:n[°ºo.]*)?\s*)?(\d{1,4})/i);
+    const videosResponse = await fetch(videosUrl, { next: { revalidate: 300 } });
+    const videosPayload = await videosResponse.json();
+
+    if (!videosResponse.ok) {
+      throw new Error(videosPayload.error?.message || "Statistiques YouTube indisponibles.");
+    }
+
+    const videos = videosPayload.items.map((video, index) => {
+      const dossierMatch = video.snippet.title.match(/(?:dossier\s*(?:n[°ºo.]*)?\s*)?(\d{1,4})/i);
       return {
-        id:v.id,
-        dossier:match?.[1]?.padStart(3,"0") || String(index+1).padStart(3,"0"),
-        title:v.snippet.title,
-        platform:"YouTube Shorts",
-        publishedAt:v.snippet.publishedAt,
-        thumbnail:v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || "",
-        views:Number(v.statistics.viewCount || 0),
-        likes:Number(v.statistics.likeCount || 0),
-        comments:Number(v.statistics.commentCount || 0),
-        shares:0,
-        retention:0,
-        completion:0,
-        followers:0,
+        id: video.id,
+        dossier: dossierMatch?.[1]?.padStart(3, "0") || String(index + 1).padStart(3, "0"),
+        title: video.snippet.title,
+        hook: video.snippet.title,
+        platform: "YouTube Shorts",
+        views: Number(video.statistics.viewCount || 0),
+        likes: Number(video.statistics.likeCount || 0),
+        comments: Number(video.statistics.commentCount || 0),
+        shares: 0,
+        retention: 0,
+        completion: 0,
+        followers: 0,
+        publishedAt: video.snippet.publishedAt,
+        thumbnail:
+          video.snippet.thumbnails?.maxres?.url ||
+          video.snippet.thumbnails?.high?.url ||
+          video.snippet.thumbnails?.medium?.url ||
+          ""
       };
     });
 
     return NextResponse.json({
-      status:"ok",
-      channel:{title:channel.snippet.title,thumbnail:channel.snippet.thumbnails?.high?.url,...channel.statistics},
+      status: "ok",
+      channel: {
+        title: channel.snippet.title,
+        thumbnail: channel.snippet.thumbnails?.high?.url || "",
+        ...channel.statistics
+      },
       videos,
-      message:""
+      message: ""
     });
   } catch (error) {
-    return NextResponse.json({status:"error",videos:[],channel:null,message:error.message},{status:500});
+    return NextResponse.json({
+      status: "error",
+      channel: null,
+      videos: [],
+      message: error instanceof Error ? error.message : "Erreur YouTube inconnue."
+    }, { status: 500 });
   }
 }

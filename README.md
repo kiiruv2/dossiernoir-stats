@@ -1,39 +1,27 @@
-# Dossier Noir Stats V3
+# Dossier Noir Stats V3 complète
 
-## Inclus
+Cette version contient bien tous les fichiers nécessaires à la racine du projet.
+
+## Fonctions actives
+- Dashboard responsive
 - Graphiques animés Recharts
-- Miniatures YouTube automatiques
-- Analyse IA avec repli local si aucune clé OpenAI
-- Score de viralité heuristique
-- Calcul descriptif de la meilleure heure de publication
+- YouTube Data API
+- Miniatures YouTube
+- Score de viralité
+- Meilleure heure descriptive
+- Revenus estimés
+- Hooks
 - Calendrier
-- Estimation de revenus configurable
-- Classement des hooks
 - Alertes internes
-- Cron Vercel horaire
-- Schéma Supabase
-- Saisie manuelle TikTok/Instagram en attendant l'approbation de leurs API
+- Analyse locale, ou OpenAI si une clé est ajoutée
+- Administration manuelle TikTok/Instagram
+- Vercel Cron configuré
 
-## Important
-Certaines fonctions sont prêtes techniquement mais exigent des autorisations externes :
-- Instagram : application Meta + permissions Insights
-- TikTok : application développeur + Display API/Login Kit
-- Notifications externes : canal email, Discord ou Telegram à choisir
-- Données privées YouTube (rétention exacte, abonnés gagnés par vidéo) : OAuth YouTube Analytics, pas seulement une clé publique
+## Déploiement
+1. Supprime de `main` les anciens fichiers et le ZIP V2.
+2. Envoie le contenu de ce dossier à la racine du dépôt.
+3. Vérifie la présence de `app/page.js`, `app/layout.js`, `app/globals.css`.
+4. Commit sur `main`.
+5. Vercel déploiera automatiquement.
 
-## Mise à jour depuis la V2
-Remplace le contenu du dépôt GitHub par celui de ce ZIP, commit sur `main`, puis Vercel redéploiera automatiquement.
-
-## Variables minimales
-- YOUTUBE_API_KEY
-- YOUTUBE_CHANNEL_ID
-
-## Variables recommandées
-- OPENAI_API_KEY
-- OPENAI_MODEL
-- NEXT_PUBLIC_SUPABASE_URL
-- NEXT_PUBLIC_SUPABASE_ANON_KEY
-- SUPABASE_SERVICE_ROLE_KEY
-- CRON_SECRET
-
-Consulte `INSTALLATION-V3.txt` et `supabase/schema.sql`.
+Voir `INSTALLATION.txt`.
