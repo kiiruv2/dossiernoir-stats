@@ -85,11 +85,31 @@ export async function GET() {
       throw new Error(videosPayload.error?.message || "Statistiques YouTube indisponibles.");
     }
 
-    const videos = videosPayload.items.map((video, index) => {
-      const dossierMatch = video.snippet.title.match(/(?:dossier\s*(?:n[°ºo.]*)?\s*)?(\d{1,4})/i);
+    function identifyDossier(title = "") {
+      const normalized = title
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
+      // Priorité absolue à un numéro explicitement précédé du mot « dossier ».
+      const explicit = normalized.match(/dossier\s*(?:n(?:umero)?\s*)?[°ºo.:-]*\s*(\d{1,3})\b/i);
+      if (explicit) return explicit[1].padStart(3, "0");
+
+      // Mapping éditorial verrouillé : aucun nombre isolé du titre ne peut créer un dossier.
+      if (/dyatlov|randonneur|col\s+dyatlov/.test(normalized)) return "001";
+      if (/mh\s*370|vol\s+mh|avion|239\s+personnes/.test(normalized)) return "002";
+      if (/mary\s+celeste|navire|bateau\s+fantome|bateau.*vide/.test(normalized)) return "003";
+
+      return null;
+    }
+
+    // L'ordre de l'API YouTube est inversé (plus récent d'abord), donc on ne l'utilise
+    // jamais pour numéroter les dossiers. Les vidéos non reconnues restent hors série.
+    const videos = videosPayload.items.map((video) => {
+      const dossier = identifyDossier(video.snippet.title);
       return {
         id: video.id,
-        dossier: dossierMatch?.[1]?.padStart(3, "0") || String(index + 1).padStart(3, "0"),
+        dossier: dossier || "HORS-SERIE",
         title: video.snippet.title,
         hook: video.snippet.title,
         platform: "YouTube Shorts",
