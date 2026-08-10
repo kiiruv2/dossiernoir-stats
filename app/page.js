@@ -1,7 +1,7 @@
 'use client';
 import { useEffect,useMemo,useState } from "react";
 import { Area,AreaChart,Bar,BarChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis } from "recharts";
-import { bestHour,diagnosticFor,engagementRate,estimateRevenue,groupByDossier,nextTargets,normalizeDossier,viralScore } from "../lib/analytics";
+import { bestHour,diagnosticFor,engagementRate,estimateRevenue,groupByDossier,nextTargets,normalizeDossier,applyEditorialMetrics,viralScore } from "../lib/analytics";
 import { demoVideos } from "../lib/demo";
 
 const fmt=(v)=>new Intl.NumberFormat("fr-FR",{notation:Number(v)>999999?"compact":"standard",maximumFractionDigits:1}).format(Number(v||0));
@@ -16,7 +16,7 @@ export default function Dashboard(){
  useEffect(()=>{fetch("/api/youtube").then(r=>r.json()).then(setYoutube).catch(()=>setYoutube({status:"error",videos:[],message:"Connexion YouTube impossible."})); try{setManual(JSON.parse(localStorage.getItem("dn-manual-v4")||localStorage.getItem("dn-manual-v3")||"[]"));setSnapshots(JSON.parse(localStorage.getItem("dn-snapshots-v43")||"[]"))}catch{setManual([]);setSnapshots([])}},[]);
  const real=useMemo(()=>[...(youtube.videos||[]),...manual],[youtube.videos,manual]); const videos=demoMode&&!real.length?demoVideos:real;
  const median=useMemo(()=>{const a=videos.map(v=>Number(v.views||0)).sort((a,b)=>a-b);return a.length?a[Math.floor(a.length/2)]:1},[videos]);
- const enriched=useMemo(()=>videos.map(v=>({...v,dossier:normalizeDossier(v),engagement:engagementRate(v),score:viralScore(v,median),revenue:estimateRevenue(v)})),[videos,median]);
+ const enriched=useMemo(()=>videos.map(v=>{const base=applyEditorialMetrics(v);return {...base,engagement:engagementRate(base),score:viralScore(base,median),revenue:estimateRevenue(base)}}),[videos,median]);
  const dossiers=useMemo(()=>groupByDossier(enriched),[enriched]); const latest=dossiers[dossiers.length-1]; const diagnosis=diagnosticFor(latest); const targets=nextTargets(dossiers);
  const totals=useMemo(()=>enriched.reduce((a,v)=>({views:a.views+Number(v.views||0),interactions:a.interactions+Number(v.likes||0)+Number(v.comments||0)+Number(v.shares||0),followers:a.followers+Number(v.followers||0)}),{views:0,interactions:0,followers:0}),[enriched]);
  const ranked=[...dossiers].sort((a,b)=>b.score-a.score); const best=ranked[0]; const hour=bestHour(enriched);

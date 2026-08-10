@@ -99,6 +99,7 @@ export async function GET() {
       if (/dyatlov|randonneur|col\s+dyatlov/.test(normalized)) return "001";
       if (/mh\s*370|vol\s+mh|avion|239\s+personnes/.test(normalized)) return "002";
       if (/mary\s+celeste|navire|bateau\s+fantome|bateau.*vide/.test(normalized)) return "003";
+      if (/flannan|iles?\s+flannan|phare|gardiens?.*(?:phare|dispar)|(?:trois|3)\s+gardiens/.test(normalized)) return "004";
 
       return null;
     }
