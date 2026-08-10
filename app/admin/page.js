@@ -1,18 +1,19 @@
 'use client';
 import { useEffect,useState } from "react";
+import { defaultDossierSnapshots,defaultMargeSnapshots,mergeSeedSnapshots } from "../../lib/checkpoints";
 const freshForm=()=>({dossier:"004",title:"",hook:"",platform:"YouTube Shorts",views:0,likes:0,comments:0,shares:0,retention:"",completion:"",scrollStop:"",followers:0,publishedAt:new Date().toISOString().slice(0,16)});
 const freshSnap=()=>({project:"Dossier Noir",dossier:"005",hours:"1",platform:"YouTube Shorts",views:0,likes:0,comments:0,shares:0,scrollStop:"",retention:"",completion:"",avgViewDuration:"",followers:0,shownInFeed:""});
-const checkpoints=["1","3","6","12","24","48","72","168"];
+const checkpoints=["1","2","4","24","48","72","168"];
 export default function AdminPage(){
  const [entries,setEntries]=useState([]),[snapshots,setSnapshots]=useState([]),[margeSnapshots,setMargeSnapshots]=useState([]),[form,setForm]=useState(freshForm()),[snap,setSnap]=useState(freshSnap());
- useEffect(()=>{try{setEntries(JSON.parse(localStorage.getItem("dn-manual-v4")||localStorage.getItem("dn-manual-v3")||"[]"));setSnapshots(JSON.parse(localStorage.getItem("dn-snapshots-v43")||"[]"));setMargeSnapshots(JSON.parse(localStorage.getItem("marge-snapshots-v1")||"[]"))}catch{}},[]);
+ useEffect(()=>{try{setEntries(JSON.parse(localStorage.getItem("dn-manual-v4")||localStorage.getItem("dn-manual-v3")||"[]"));setSnapshots(mergeSeedSnapshots(JSON.parse(localStorage.getItem("dn-snapshots-v43")||"[]"),defaultDossierSnapshots));setMargeSnapshots(mergeSeedSnapshots(JSON.parse(localStorage.getItem("marge-snapshots-v1")||"[]"),defaultMargeSnapshots))}catch{}},[]);
  const save=(x)=>{setEntries(x);localStorage.setItem("dn-manual-v4",JSON.stringify(x))};
  const saveSnaps=(x)=>{setSnapshots(x);localStorage.setItem("dn-snapshots-v43",JSON.stringify(x))};
  const saveMargeSnaps=(x)=>{setMargeSnapshots(x);localStorage.setItem("marge-snapshots-v1",JSON.stringify(x))};
  function submit(e){e.preventDefault();const numeric=["views","likes","comments","shares","retention","completion","scrollStop","followers"];const entry={...form,id:crypto.randomUUID()};numeric.forEach(k=>entry[k]=form[k]===""?null:Number(form[k]));save([entry,...entries]);setForm(freshForm())}
  function submitSnap(e){e.preventDefault();const numeric=["hours","views","likes","comments","shares","scrollStop","retention","completion","avgViewDuration","followers","shownInFeed"];const entry={...snap,id:crypto.randomUUID(),capturedAt:new Date().toISOString()};numeric.forEach(k=>entry[k]=snap[k]===""?null:Number(snap[k]));if(snap.project==="MARGE."){saveMargeSnaps([entry,...margeSnapshots])}else{saveSnaps([entry,...snapshots])}setSnap({...freshSnap(),project:snap.project,dossier:snap.dossier,platform:snap.platform})}
  return <main className="standalone"><a className="back-link" href="/">← Retour au Control Center</a><header><p className="eyebrow">DOSSIER NOIR · V4.3</p><h1>Centre de données</h1><p>Ajoute les chiffres finaux et surtout les checkpoints H+ du dernier dossier. L'assistant utilisera toute la trajectoire pour ses analyses.</p></header>
- <section className="panel checkpoint-panel"><div className="panel-heading"><div><p>SUIVI TEMPOREL</p><h2>Ajouter un checkpoint H+</h2></div></div><div className="checkpoint-help"><b>À relever idéalement :</b> H+1 · H+3 · H+6 · H+12 · H+24 · H+48. YouTube : vues, « ont continué », rétention, durée moyenne, likes/commentaires, abonnés et affichages dans le flux.</div>
+ <section className="panel checkpoint-panel"><div className="panel-heading"><div><p>SUIVI TEMPOREL</p><h2>Ajouter un checkpoint H+</h2></div></div><div className="checkpoint-help"><b>À relever idéalement :</b> H+1 · H+2 · H+4 · H+24 · H+48. YouTube : vues, « ont continué », rétention, durée moyenne, likes/commentaires, abonnés et affichages dans le flux.</div>
  <form className="admin-form" onSubmit={submitSnap}>
  <label>Projet<select value={snap.project} onChange={e=>setSnap({...snap,project:e.target.value,dossier:e.target.value==="MARGE."?"001":"005"})}><option>Dossier Noir</option><option>MARGE.</option></select></label>
  <label>{snap.project==="MARGE."?"Vidéo MARGE.":"Dossier"}<input value={snap.dossier} onChange={e=>setSnap({...snap,dossier:e.target.value})}/></label>
