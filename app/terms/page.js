@@ -86,6 +86,7 @@ export default function TermsPage() {
         </p>
 
         <div className="legal-links">
+          <a href="/about">À propos de Dossier Noir Stats</a>
           <a href="/privacy">Politique de confidentialité</a>
           <a href="/">Tableau de bord</a>
         </div>

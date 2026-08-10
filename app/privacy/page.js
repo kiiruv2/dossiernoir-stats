@@ -92,6 +92,7 @@ export default function PrivacyPage() {
         </p>
 
         <div className="legal-links">
+          <a href="/about">À propos de Dossier Noir Stats</a>
           <a href="/terms">Conditions d’utilisation</a>
           <a href="/">Tableau de bord</a>
         </div>
