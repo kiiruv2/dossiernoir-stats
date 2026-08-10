@@ -48,11 +48,55 @@ export async function GET() {
 
     const playlistResponse = await fetch(playlistUrl, { next: { revalidate: 300 } });
     const playlistPayload = await playlistResponse.json();
-    if (!playlistResponse.ok) {
-      throw new Error(playlistPayload.error?.message || "Uploads YouTube MARGE. indisponibles.");
-    }
 
-    const ids = (playlistPayload.items || []).map((item) => item.contentDetails?.videoId).filter(Boolean);
+    let ids = [];
+
+    if (playlistResponse.ok) {
+      ids = (playlistPayload.items || []).map((item) => item.contentDetails?.videoId).filter(Boolean);
+    } else {
+      const reason = playlistPayload.error?.errors?.[0]?.reason;
+      const publicVideoCount = Number(channel.statistics?.videoCount || 0);
+
+      // Une chaîne toute neuve peut exposer son ID de playlist "uploads" avant que
+      // cette playlist soit réellement disponible. Ce n'est pas une déconnexion :
+      // on garde YouTube MARGE. en état connecté et on attend la 1re publication.
+      if (reason === "playlistNotFound" && publicVideoCount === 0) {
+        return NextResponse.json({
+          status: "ok",
+          channel: {
+            id: channel.id,
+            handle: `@${handle}`,
+            title: channel.snippet.title,
+            thumbnail: channel.snippet.thumbnails?.high?.url || "",
+            ...channel.statistics
+          },
+          videos: [],
+          message: "YouTube MARGE. connecté · en attente de la première vidéo publique."
+        });
+      }
+
+      // Filet de sécurité : si YouTube annonce déjà des vidéos publiques mais que
+      // la playlist d'uploads n'est pas lisible, on récupère les vidéos par channelId.
+      // search.list est plus coûteux en quota, donc il n'est utilisé qu'en fallback.
+      if (reason === "playlistNotFound" && publicVideoCount > 0) {
+        const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+        searchUrl.searchParams.set("part", "snippet");
+        searchUrl.searchParams.set("channelId", channel.id);
+        searchUrl.searchParams.set("type", "video");
+        searchUrl.searchParams.set("order", "date");
+        searchUrl.searchParams.set("maxResults", "25");
+        searchUrl.searchParams.set("key", key);
+
+        const searchResponse = await fetch(searchUrl, { next: { revalidate: 900 } });
+        const searchPayload = await searchResponse.json();
+        if (!searchResponse.ok) {
+          throw new Error(searchPayload.error?.message || "Vidéos YouTube MARGE. indisponibles.");
+        }
+        ids = (searchPayload.items || []).map((item) => item.id?.videoId).filter(Boolean);
+      } else if (reason !== "playlistNotFound") {
+        throw new Error(playlistPayload.error?.message || "Uploads YouTube MARGE. indisponibles.");
+      }
+    }
     if (!ids.length) {
       return NextResponse.json({
         status: "ok",
