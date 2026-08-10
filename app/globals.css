@@ -139,3 +139,7 @@
 .project-marge table th{color:#81764f}.project-marge table td{border-color:#292719}
 .project-marge .primary{background:var(--marge);color:#161306}
 @media(max-width:760px){.marge-video-card{grid-template-columns:85px 1fr}.marge-video-card>strong{grid-column:1/-1;text-align:left}.daily-vs-header{align-items:flex-start;flex-direction:column}.daily-vs-header h2{font-size:22px}}
+
+/* V5.2 · connexions automatiques MARGE. */
+.marge-connect-strip{display:grid;grid-template-columns:1fr 1fr auto;align-items:center;gap:18px;margin-bottom:13px;border-color:#51461e;background:linear-gradient(135deg,#17150d,#0d0c08)}
+.marge-connect-strip>div{display:grid;gap:4px}.marge-connect-strip span{font-size:9px;letter-spacing:1.5px;color:#a79551;font-weight:900}.marge-connect-strip b{font-size:13px;color:#f2eee0}.marge-connect-strip small{font-size:10px;color:#746d52}.marge-connect-button{display:inline-flex;align-items:center;justify-content:center;min-width:130px;padding:11px 14px;border-radius:8px;background:#f2c94c;color:#111;text-decoration:none;font-size:11px;font-weight:900}.project-marge .eyebrow{color:#f2c94c}.project-marge .primary{background:#f2c94c;color:#111}@media(max-width:760px){.marge-connect-strip{grid-template-columns:1fr}.marge-connect-button{width:100%}}
