@@ -109,3 +109,33 @@
 .hookly-flow i{color:#666;font-style:normal}
 @media(max-width:1100px){.marge-grid,.vs-grid{grid-template-columns:1fr}.vs-hero{grid-template-columns:1fr 95px 1fr}.marge-checkpoints{grid-template-columns:1fr}}
 @media(max-width:760px){.project-switcher{margin:10px 0 14px}.marge-hero{align-items:flex-start;flex-direction:column}.marge-status-orb{width:100px;height:100px;flex-basis:100px}.marge-status-orb span{font-size:30px}.marge-specs{grid-template-columns:1fr}.marge-checkpoints>div{grid-template-columns:48px 1fr}.vs-hero{grid-template-columns:1fr}.vs-center{min-height:80px}.marge-side{text-align:left;align-items:flex-start}.vs-metrics>div{grid-template-columns:1fr 1fr 1fr}.vs-side>strong{font-size:40px}}
+
+/* V5.1 — MARGE. full dashboard + VS du jour */
+.project-marge body{background:#080808}
+.project-marge .content{background:radial-gradient(circle at 90% 0,rgba(242,201,76,.07),transparent 26%)}
+.marge-main .chart-panel,.marge-secondary .panel{border-color:#302b19}
+.marge-reference{background:radial-gradient(circle at 50% 26%,rgba(242,201,76,.1),transparent 32%),linear-gradient(145deg,#17160e,#0d0d0a)}
+.marge-score-ring{width:118px;height:118px;border-radius:50%;margin:14px auto 18px;display:grid;place-content:center;text-align:center;border:8px solid #292515;outline:2px solid #5f4d16;box-shadow:0 0 45px rgba(242,201,76,.08)}
+.marge-score-ring span{font-size:34px;font-weight:950;color:var(--marge)}
+.marge-score-ring small{font-size:8px;letter-spacing:1.6px;color:#80723b;font-weight:900}
+.marge-diagnostic{margin:0;color:#a9a28a;line-height:1.75;font-size:13px}
+.target-list{display:grid;gap:0}
+.target-list span{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #2b281b;color:#8d876f;font-size:11px}
+.target-list strong{font-size:15px}
+.marge-mini .verdict-row{border-color:#292719}
+.marge-video-card{display:grid;grid-template-columns:130px 1fr 120px;gap:20px;align-items:center;padding:22px;border:1px solid #38321a;border-radius:12px;background:linear-gradient(90deg,rgba(242,201,76,.055),transparent 35%),#0d0d0b}
+.marge-video-card>div{display:grid;gap:5px}.marge-video-card>div span{font-family:Impact,Arial Black,sans-serif;font-size:38px;color:var(--marge)}.marge-video-card>div small{font-size:8px;color:#746b45;letter-spacing:1.4px}.marge-video-card section h3{margin:0 0 7px}.marge-video-card section p{margin:0;color:#8f8a76;font-size:11px;line-height:1.5}.marge-video-card>strong{text-align:right;font-size:28px;color:#eee5c4}
+.marge-analysis{border-color:#3a3217;background:#0b0b08}
+.marge-flow span{border-color:#4d4117;color:#d8c26d}
+.marge-hook-list article>b,.marge-hook-list .hook-score strong{color:var(--marge)}
+.marge-target{border-color:#4c3e17;background:linear-gradient(145deg,#17150c,#0d0d0a)}
+.marge-admin-row{border-left:3px solid var(--marge);padding-left:12px}
+.marge-admin-row b{color:var(--marge)}
+.daily-vs-header{display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:13px;background:linear-gradient(90deg,rgba(229,57,53,.055),transparent 42%,rgba(242,201,76,.055)),#0d0d0d}
+.daily-vs-header p{margin:0 0 8px;color:#9c7740;font-size:9px;font-weight:950;letter-spacing:1.8px}
+.daily-vs-header h2{margin:0;font-size:28px}.daily-vs-header h2 span{margin:0 11px;color:#777;font-size:16px}.daily-vs-header small{display:block;margin-top:8px;color:#777}
+.daily-vs .vs-side{min-height:220px}.daily-vs .vs-center{background:radial-gradient(circle,rgba(255,255,255,.04),transparent 58%),#090909}
+.vs-live-metrics{display:grid}.vs-live-metrics>div{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;padding:16px 0;border-bottom:1px solid #292929}.vs-live-metrics span{color:#777;font-size:10px;font-weight:800}.vs-live-metrics b{color:#ff625a;text-align:center}.vs-live-metrics strong{color:var(--marge);text-align:right}
+.project-marge table th{color:#81764f}.project-marge table td{border-color:#292719}
+.project-marge .primary{background:var(--marge);color:#161306}
+@media(max-width:760px){.marge-video-card{grid-template-columns:85px 1fr}.marge-video-card>strong{grid-column:1/-1;text-align:left}.daily-vs-header{align-items:flex-start;flex-direction:column}.daily-vs-header h2{font-size:22px}}
