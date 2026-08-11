@@ -87,11 +87,21 @@ async function loadData(token) {
   };
 }
 
+function dossierFromText(video) {
+  const text = `${video.title || ""} ${video.video_description || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/dyatlov|randonneur/.test(text)) return "001";
+  if (/mh\s*370|239\s+personnes/.test(text)) return "002";
+  if (/mary\s+celeste|navire/.test(text)) return "003";
+  if (/flannan|phare|trois\s+gardiens|3\s+gardiens/.test(text)) return "004";
+  if (/hinterkaifeck|6\s+morts|six\s+morts|cette\s+ferme/.test(text)) return "005";
+  if (/emile|haut[-\s]?vernet|ossements/.test(text)) return "006";
+  return "HORS-SERIE";
+}
 function normalize(videos) {
   return videos.map((video, index) => ({
     id: video.id,
     _source: "tiktok",
-    dossier: String(index + 1).padStart(3, "0"),
+    dossier: dossierFromText(video),
     title: video.title || video.video_description || `Vidéo TikTok ${index + 1}`,
     hook: video.title || video.video_description || `Vidéo TikTok ${index + 1}`,
     platform: "TikTok",
@@ -99,8 +109,8 @@ function normalize(videos) {
     likes: Number(video.like_count || 0),
     comments: Number(video.comment_count || 0),
     shares: Number(video.share_count || 0),
-    retention: 0,
-    completion: 0,
+    retention: null,
+    completion: null,
     followers: 0,
     publishedAt: new Date(Number(video.create_time || 0) * 1000).toISOString(),
     thumbnail: video.cover_image_url || "",
